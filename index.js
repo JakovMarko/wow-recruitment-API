@@ -345,19 +345,42 @@ async function main() {
 
         const data = await response.json();
         element.charLogsScore = {
-          amidrassilBest:
-            data.data.characterData.character.amidrassil.bestPerformanceAverage,
-          amidrassilMedian:
-            data.data.characterData.character.amidrassil
-              .medianPerformanceAverage,
-          aberrusBest:
-            data.data.characterData.character.aberrus.bestPerformanceAverage,
-          aberrusMedian:
-            data.data.characterData.character.aberrus.medianPerformanceAverage,
-          votiBest:
-            data.data.characterData.character.voti.bestPerformanceAverage,
-          votiMedian:
-            data.data.characterData.character.voti.medianPerformanceAverage,
+          amidrassilBest: data.data.characterData.character.amidrassil
+            .bestPerformanceAverage
+            ? data.data.characterData.character.amidrassil.bestPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
+          amidrassilMedian: data.data.characterData.character.amidrassil
+            .medianPerformanceAverage
+            ? data.data.characterData.character.amidrassil.medianPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
+          aberrusBest: data.data.characterData.character.aberrus
+            .bestPerformanceAverage
+            ? data.data.characterData.character.aberrus.bestPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
+          aberrusMedian: data.data.characterData.character.aberrus
+            .medianPerformanceAverage
+            ? data.data.characterData.character.aberrus.medianPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
+          votiBest: data.data.characterData.character.voti
+            .bestPerformanceAverage
+            ? data.data.characterData.character.voti.bestPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
+          votiMedian: data.data.characterData.character.voti
+            .medianPerformanceAverage
+            ? data.data.characterData.character.voti.medianPerformanceAverage.toFixed(
+                1
+              )
+            : 0,
         };
 
         element.bossesKilled = {
@@ -608,12 +631,12 @@ async function main() {
     }
   }
 
-  // await getWowProgessRecruits();
+  await getWowProgessRecruits();
   await getRIORecruits();
   await raiderioAPI(charData);
-  // await getPlayersDescription(charData);
-  // await getWoWProgressBattleNet(charData);
-  // await getWoWProgressDiscord(charData);
+  await getPlayersDescription(charData);
+  await getWoWProgressBattleNet(charData);
+  await getWoWProgressDiscord(charData);
   await warcraftlogsAPI(charData);
   // await blizzardAPI();
   console.log(charData);
