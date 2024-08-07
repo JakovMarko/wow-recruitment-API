@@ -17,6 +17,7 @@ const TestSchema = new mongoose.Schema(
     wclUrl: {
       type: String,
     },
+    charID: String,
     charCommentary: String,
     battleNet: String,
     discord: String,

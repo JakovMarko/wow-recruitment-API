@@ -7,7 +7,7 @@ import { BlizzAPI } from "blizzapi";
 // Configure ENV path
 dotenv.config();
 let countID = 0;
-let charData = [];
+let recruitsArray = [];
 let testElements = [
   {
     charName: "Vaynard",
@@ -26,7 +26,6 @@ let testElements = [
 
 async function main() {
   let startTime = Date.now();
-  // await ConnectDB();
 
   // Get list of recruits from WoWProgress page
   async function getWowProgessRecruits() {
@@ -70,8 +69,15 @@ async function main() {
         let wowProgUrl = `https://www.wowprogress.com/character/eu/${charServer.toLowerCase()}/${charName}`;
         let rioUrl = `https://www.raider.io/character/eu/${charServer.toLowerCase()}/${charName}`;
         let wclUrl = `https://www.warcraftlogs.com/character/eu/${charServer.toLowerCase()}/${charName.toLowerCase()}`;
-
-        charData.push({ charName, charServer, wowProgUrl, rioUrl, wclUrl });
+        let charID = `${charName.toLowerCase()}-${charServer.toLowerCase()}`;
+        recruitsArray.push({
+          charName,
+          charServer,
+          wowProgUrl,
+          rioUrl,
+          wclUrl,
+          charID,
+        });
       });
     } catch (error) {
       console.error(error);
@@ -99,19 +105,42 @@ async function main() {
         return item.charUrl.split("/");
       });
 
-      const rioData = links.map(({ charUrl, charName }, index) => ({
-        charName,
-        charServer: getServer[index][5],
-        wowProgUrl: `https://www.wowprogress.com/character/eu/${getServer[index][5]}/${charName}`,
-        rioUrl: charUrl,
-        wclUrl: `https://www.warcraftlogs.com/character/eu/${getServer[index][5]}/${charName}`,
-      }));
-
-      for await (const item of rioData) {
-        charData.push(item);
-      }
+      links.forEach(({ charUrl, charName }, index) => {
+        let charID = `${charName.toLowerCase()}-${getServer[
+          index
+        ][5].toLowerCase()}`;
+        // CHECK IF RECRUIT WAS NOT ALREADY ADDED FROM WOWPROGRESS
+        if (!recruitsArray.some((item) => item.charID == charID)) {
+          recruitsArray.push({
+            charName,
+            charServer: getServer[index][5],
+            wowProgUrl: `https://www.wowprogress.com/character/eu/${getServer[index][5]}/${charName}`,
+            rioUrl: charUrl,
+            wclUrl: `https://www.warcraftlogs.com/character/eu/${getServer[index][5]}/${charName}`,
+            charID: `${charName.toLowerCase()}-${getServer[
+              index
+            ][5].toLowerCase()}`,
+          });
+        }
+      });
 
       await browser.close();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  // CHECK IN THE DATABASE IF RECRUIT IS NOT ALREADY ADDED
+  async function checkIfDuplicate(arr) {
+    try {
+      const databaseCharacterID = await Testdata.find({}, "charID").exec();
+      let container = arr.slice();
+      recruitsArray = container.filter((item) => {
+        if (databaseCharacterID.some((i) => i.charID == item.charID)) {
+          return "";
+        } else {
+          return item;
+        }
+      });
     } catch (error) {
       console.error(error);
     }
@@ -178,10 +207,10 @@ async function main() {
 
   // FUNCTION FOR INSERTING DATA INTO THE DATABASE
   async function saveUserData(arr) {
-    await ConnectDB();
-    const testRun = await Testdata.insertMany(charData);
+    if (recruitsArray.length > 0) {
+      const testRun = await Testdata.insertMany(recruitsArray);
+    }
     console.log("finished inserting");
-    process.exit(1);
   }
 
   // CHARACTER INFO FROM RAIDERIO API
@@ -206,7 +235,7 @@ async function main() {
           .filter((item) => (item["cutting_edge"] ? item : null))
           .map((item) => item.raid);
         element.currentGuild = data.guild;
-        // IF CHARACTER IS IN A GUILD GET THE GUILDS RANKINGS LAST EXPANSION
+        // IF CHARACTER IS IN A GUILD GET THE GUILDS RANKINGS LAST EXPANSION FROM RAIDERIO API
         if (element.currentGuild) {
           const guildResponse = await fetch(
             `https://raider.io/api/v1/guilds/profile?region=eu&realm=${
@@ -225,6 +254,8 @@ async function main() {
               voti: 0,
             };
           } else {
+            element.guildWLCProfile = guildData["profile_url"];
+
             element.guildRankings = {
               amidrassil:
                 guildData["raid_rankings"]["amirdrassil-the-dreams-hope"].mythic
@@ -237,6 +268,8 @@ async function main() {
             };
           }
         }
+
+        // RECEIVE CHARACTER RAID PROGRESS FOR THE LAST 3 RAIDS IN THE FORMAT AMIDRASSIL:'9/9 M'  ETC
         element.charRaidProgress = {
           amidrassil:
             data.raid_progression["amirdrassil-the-dreams-hope"].summary,
@@ -244,12 +277,37 @@ async function main() {
             data.raid_progression["aberrus-the-shadowed-crucible"].summary,
           voti: data.raid_progression["vault-of-the-incarnates"].summary,
         };
+
+        // SEPARATE ALL THE PEOPLE THAT EITHER HAVE CE OR AT LEAST SOME LATE MYTHIC PROGRESS
+        // GIVING THEM 'PENDING' STATUS FROM NO EXP PLAYERS THAT WILL AUTOMATICALY GET FLAGED WITH 'REJECTED' STATUS AND PUT INTO THE UNDERPERFORMERS BRACKED
+        if (element.charCEList.length > 0) {
+          element.charRecruitStatus = "pending";
+        } else if (
+          element.charRaidProgress.amidrassil == "7/9 M" ||
+          element.charRaidProgress.amidrassil == "8/9 M" ||
+          element.charRaidProgress.amidrassil == "9/9 M"
+        ) {
+          element.charRecruitStatus = "pending";
+        } else if (
+          element.charRaidProgress.aberrus == "7/9 M" ||
+          element.charRaidProgress.aberrus == "8/9 M" ||
+          element.charRaidProgress.aberrus == "9/9 M"
+        ) {
+          element.charRecruitStatus = "pending";
+        } else if (
+          element.charRaidProgress.voti == "6/8 M" ||
+          element.charRaidProgress.voti == "7/8 M" ||
+          element.charRaidProgress.voti == "8/8 M"
+        ) {
+          element.charRecruitStatus = "pending";
+        } else {
+          element.charRecruitStatus = "rejected";
+        }
       } catch (error) {
         console.error("Error fetching character data:", error);
         throw error;
       }
     }
-    console.log(elements);
   }
   // USING BLIZZARD API
   async function blizzardAPI() {
@@ -631,21 +689,24 @@ async function main() {
     }
   }
 
+  await ConnectDB();
   await getWowProgessRecruits();
-  await getRIORecruits();
-  await raiderioAPI(charData);
-  await getPlayersDescription(charData);
-  await getWoWProgressBattleNet(charData);
-  await getWoWProgressDiscord(charData);
-  await warcraftlogsAPI(charData);
+  // await getRIORecruits();
+  await checkIfDuplicate(recruitsArray);
+  // await raiderioAPI(recruitsArray);
+  // await getPlayersDescription(recruitsArray);
+  // await getWoWProgressBattleNet(recruitsArray);
+  // await getWoWProgressDiscord(recruitsArray);
+  // await warcraftlogsAPI(recruitsArray);
   // await blizzardAPI();
-  console.log(charData);
-  // await saveUserData(charData);
+  await saveUserData(recruitsArray);
+  console.log(recruitsArray, recruitsArray.length);
 
   // await testFetch();
   let finishTime = Date.now();
 
   console.log((finishTime - startTime) / 1000, " seconds");
+  process.exit(1);
 }
 
 main();
