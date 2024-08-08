@@ -105,7 +105,7 @@ export const getRecruits = async (req, res) => {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
           await page.goto(url);
-
+          console.log("connected to raiderIO recruitment page");
           //  Get all links
           const links = await page.evaluate(() =>
             Array.from(document.querySelectorAll(".slds-col span a"), (e) => ({
@@ -113,6 +113,10 @@ export const getRecruits = async (req, res) => {
               charName: e.innerHTML,
             }))
           );
+
+          await browser.close();
+          console.log("closed pupeteer browser");
+
           // Extract the server name from each characters raiderio homepage link as i could not get it any other way
           const getServer = links.map((item, index) => {
             return item.charUrl.split("/");
@@ -137,7 +141,6 @@ export const getRecruits = async (req, res) => {
             }
           });
 
-          await browser.close();
           console.log("Finished collecting raiderio recruits list....");
         } catch (error) {
           console.error(error);
