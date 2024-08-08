@@ -733,7 +733,13 @@ export const getRecruits = async (req, res) => {
 
     await main();
 
-    res.status(200).json("Successfuly finished collecting recruits");
+    res
+      .status(200)
+      .json(
+        "Successfuly finished collecting ",
+        recruitsArray.length,
+        " recruits"
+      );
   } catch (error) {
     console.error(error);
     res.status(404).json({ message: error.message });
