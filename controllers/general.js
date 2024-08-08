@@ -356,7 +356,6 @@ export const getRecruits = async (req, res) => {
         for (let element of elements) {
           let charRole = "";
           let query = "";
-          console.log(element);
           if (
             element.charSpec === "Holy" ||
             element.charSpec === "Discipline" ||
@@ -365,7 +364,6 @@ export const getRecruits = async (req, res) => {
             element.charSpec === "Mistweaver"
           ) {
             element.charRoleLogs = "HPS";
-            console.log("role is hps");
 
             query = `{
           characterData {
@@ -381,7 +379,6 @@ export const getRecruits = async (req, res) => {
         }`;
           } else {
             element.charRoleLogs = "DPS";
-            console.log("role is dps");
             query = `{
           characterData {
             character(name: "${element.charName}", serverSlug: "${element.charServer}", serverRegion: "eu") {
@@ -397,9 +394,9 @@ export const getRecruits = async (req, res) => {
           }
         }`;
           }
-          console.log("fetching warcraftlogs data form ID:", countID);
+          // console.log("fetching warcraftlogs data form ID:", countID);
           await fetchCharacterData(query, element);
-          console.log("finished fetching data for ID:", countID);
+          // console.log("finished fetching data for ID:", countID);
           countID++;
         }
 
