@@ -1,9 +1,10 @@
 import * as cheerio from "cheerio";
-import Testdata from "./testSchema.js";
+import Recruits from "./Recruits.js";
 import ConnectDB from "./testdata.js";
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
 import { BlizzAPI } from "blizzapi";
+
 // Configure ENV path
 dotenv.config();
 let countID = 0;
@@ -67,7 +68,7 @@ async function main() {
           return;
         }
         let wowProgUrl = `https://www.wowprogress.com/character/eu/${charServer.toLowerCase()}/${charName}`;
-        let rioUrl = `https://www.raider.io/character/eu/${charServer.toLowerCase()}/${charName}`;
+        let rioUrl = `https://www.raider.io/characters/eu/${charServer.toLowerCase()}/${charName}`;
         let wclUrl = `https://www.warcraftlogs.com/character/eu/${charServer.toLowerCase()}/${charName.toLowerCase()}`;
         let charID = `${charName.toLowerCase()}-${charServer.toLowerCase()}`;
         recruitsArray.push({
@@ -132,7 +133,7 @@ async function main() {
   // CHECK IN THE DATABASE IF RECRUIT IS NOT ALREADY ADDED
   async function checkIfDuplicate(arr) {
     try {
-      const databaseCharacterID = await Testdata.find({}, "charID").exec();
+      const databaseCharacterID = await Recruits.find({}, "charID").exec();
       let container = arr.slice();
       recruitsArray = container.filter((item) => {
         if (databaseCharacterID.some((i) => i.charID == item.charID)) {
@@ -208,7 +209,7 @@ async function main() {
   // FUNCTION FOR INSERTING DATA INTO THE DATABASE
   async function saveUserData(arr) {
     if (recruitsArray.length > 0) {
-      const testRun = await Testdata.insertMany(recruitsArray);
+      const testRun = await Recruits.insertMany(recruitsArray);
     }
     console.log("finished inserting");
   }
@@ -347,6 +348,8 @@ async function main() {
         element.charSpec === "Mistweaver"
       ) {
         element.charRoleLogs = "HPS";
+        console.log("role is hps");
+
         query = `{
           characterData {
               character(name: "${element.charName}", serverSlug: "${element.charServer}", serverRegion: "eu") {
@@ -361,7 +364,7 @@ async function main() {
         }`;
       } else {
         element.charRoleLogs = "DPS";
-        console.log(charRole);
+        console.log("role is dps");
         query = `{
           characterData {
             character(name: "${element.charName}", serverSlug: "${element.charServer}", serverRegion: "eu") {
@@ -402,286 +405,290 @@ async function main() {
         }
 
         const data = await response.json();
-        element.charLogsScore = {
-          amidrassilBest: data.data.characterData.character.amidrassil
-            .bestPerformanceAverage
-            ? data.data.characterData.character.amidrassil.bestPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-          amidrassilMedian: data.data.characterData.character.amidrassil
-            .medianPerformanceAverage
-            ? data.data.characterData.character.amidrassil.medianPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-          aberrusBest: data.data.characterData.character.aberrus
-            .bestPerformanceAverage
-            ? data.data.characterData.character.aberrus.bestPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-          aberrusMedian: data.data.characterData.character.aberrus
-            .medianPerformanceAverage
-            ? data.data.characterData.character.aberrus.medianPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-          votiBest: data.data.characterData.character.voti
-            .bestPerformanceAverage
-            ? data.data.characterData.character.voti.bestPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-          votiMedian: data.data.characterData.character.voti
-            .medianPerformanceAverage
-            ? data.data.characterData.character.voti.medianPerformanceAverage.toFixed(
-                1
-              )
-            : 0,
-        };
 
-        element.bossesKilled = {
-          amidrassil: {
-            Gnarloot: data.data.characterData.character.amidrassil.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            Igira: data.data.characterData.character.amidrassil.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            Volcoross: data.data.characterData.character.amidrassil.rankings[2]
-              .totalKills
-              ? true
-              : false,
-            Council: data.data.characterData.character.amidrassil.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Larodar: data.data.characterData.character.amidrassil.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            Nymue: data.data.characterData.character.amidrassil.rankings[5]
-              .totalKills
-              ? true
-              : false,
-            Smolderon: data.data.characterData.character.amidrassil.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Tindral: data.data.characterData.character.amidrassil.rankings[7]
-              .totalKills
-              ? true
-              : false,
-            Fyrakk: data.data.characterData.character.amidrassil.rankings[8]
-              .totalKills
-              ? true
-              : false,
-          },
-          aberrus: {
-            Kazzara: data.data.characterData.character.aberrus.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            Amalgamation: data.data.characterData.character.aberrus.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            Experiments: data.data.characterData.character.aberrus.rankings[2]
-              .totalKills
-              ? true
-              : false,
-            Assault: data.data.characterData.character.aberrus.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Rashok: data.data.characterData.character.aberrus.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            Zskarn: data.data.characterData.character.aberrus.rankings[5]
-              .totalKills
-              ? true
-              : false,
-            Magmorax: data.data.characterData.character.aberrus.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Neltharion: data.data.characterData.character.aberrus.rankings[7]
-              .totalKills
-              ? true
-              : false,
-            Sarkareth: data.data.characterData.character.aberrus.rankings[8]
-              .totalKills
-              ? true
-              : false,
-          },
-          voti: {
-            Eranog: data.data.characterData.character.voti.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            Terros: data.data.characterData.character.voti.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            Council: data.data.characterData.character.voti.rankings[2]
-              .totalKills
-              ? true
-              : false,
-            Sennarth: data.data.characterData.character.voti.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Dathea: data.data.characterData.character.voti.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            Kurog: data.data.characterData.character.voti.rankings[5].totalKills
-              ? true
-              : false,
-            Diurna: data.data.characterData.character.voti.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Raszageth: data.data.characterData.character.voti.rankings[7]
-              .totalKills
-              ? true
-              : false,
-          },
-          sotfo: {
-            Vigilan: data.data.characterData.character.sotfo.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            Dausegne: data.data.characterData.character.sotfo.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            Xymox: data.data.characterData.character.sotfo.rankings[2]
-              .totalKills
-              ? true
-              : false,
-            Pantheon: data.data.characterData.character.sotfo.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Skolex: data.data.characterData.character.sotfo.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            Halondrus: data.data.characterData.character.sotfo.rankings[5]
-              .totalKills
-              ? true
-              : false,
-            Lihuvim: data.data.characterData.character.sotfo.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Anduin: data.data.characterData.character.sotfo.rankings[7]
-              .totalKills
-              ? true
-              : false,
-            Lords: data.data.characterData.character.sotfo.rankings[8]
-              .totalKills
-              ? true
-              : false,
-            Rygelon: data.data.characterData.character.sotfo.rankings[9]
-              .totalKills
-              ? true
-              : false,
-            Jailer: data.data.characterData.character.sotfo.rankings[10]
-              .totalKills
-              ? true
-              : false,
-          },
-          sod: {
-            Tarragrue: data.data.characterData.character.sod.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            EyeOfJailer: data.data.characterData.character.sod.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            TheNine: data.data.characterData.character.sod.rankings[2]
-              .totalKills
-              ? true
-              : false,
-            Nerzhul: data.data.characterData.character.sod.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Dormazain: data.data.characterData.character.sod.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            Painsmith: data.data.characterData.character.sod.rankings[5]
-              .totalKills
-              ? true
-              : false,
-            Guardian: data.data.characterData.character.sod.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Fatescribe: data.data.characterData.character.sod.rankings[7]
-              .totalKills
-              ? true
-              : false,
-            Kelthuzad: data.data.characterData.character.sod.rankings[8]
-              .totalKills
-              ? true
-              : false,
-            Sylvanas: data.data.characterData.character.sod.rankings[9]
-              .totalKills
-              ? true
-              : false,
-          },
-          nathria: {
-            Shriewking: data.data.characterData.character.nathria.rankings[0]
-              .totalKills
-              ? true
-              : false,
-            Huntsman: data.data.characterData.character.nathria.rankings[1]
-              .totalKills
-              ? true
-              : false,
-            HungeringDestroyer: data.data.characterData.character.nathria
-              .rankings[2].totalKills
-              ? true
-              : false,
-            SunKing: data.data.characterData.character.nathria.rankings[3]
-              .totalKills
-              ? true
-              : false,
-            Xymox: data.data.characterData.character.nathria.rankings[4]
-              .totalKills
-              ? true
-              : false,
-            LadyInerva: data.data.characterData.character.nathria.rankings[5]
-              .totalKills
-              ? true
-              : false,
-            Council: data.data.characterData.character.nathria.rankings[6]
-              .totalKills
-              ? true
-              : false,
-            Sludgefist: data.data.characterData.character.nathria.rankings[7]
-              .totalKills
-              ? true
-              : false,
-            Generals: data.data.characterData.character.nathria.rankings[8]
-              .totalKills
-              ? true
-              : false,
-            Denathrius: data.data.characterData.character.nathria.rankings[9]
-              .totalKills
-              ? true
-              : false,
-          },
-        };
+        if (data.data.characterData.character) {
+          element.charLogsScore = {
+            amidrassilBest: data.data.characterData.character.amidrassil
+              .bestPerformanceAverage
+              ? data.data.characterData.character.amidrassil.bestPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+            amidrassilMedian: data.data.characterData.character.amidrassil
+              .medianPerformanceAverage
+              ? data.data.characterData.character.amidrassil.medianPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+            aberrusBest: data.data.characterData.character.aberrus
+              .bestPerformanceAverage
+              ? data.data.characterData.character.aberrus.bestPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+            aberrusMedian: data.data.characterData.character.aberrus
+              .medianPerformanceAverage
+              ? data.data.characterData.character.aberrus.medianPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+            votiBest: data.data.characterData.character.voti
+              .bestPerformanceAverage
+              ? data.data.characterData.character.voti.bestPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+            votiMedian: data.data.characterData.character.voti
+              .medianPerformanceAverage
+              ? data.data.characterData.character.voti.medianPerformanceAverage.toFixed(
+                  1
+                )
+              : 0,
+          };
+
+          element.bossesKilled = {
+            amidrassil: {
+              Gnarloot: data.data.characterData.character.amidrassil.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              Igira: data.data.characterData.character.amidrassil.rankings[1]
+                .totalKills
+                ? true
+                : false,
+              Volcoross: data.data.characterData.character.amidrassil
+                .rankings[2].totalKills
+                ? true
+                : false,
+              Council: data.data.characterData.character.amidrassil.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Larodar: data.data.characterData.character.amidrassil.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              Nymue: data.data.characterData.character.amidrassil.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Smolderon: data.data.characterData.character.amidrassil
+                .rankings[6].totalKills
+                ? true
+                : false,
+              Tindral: data.data.characterData.character.amidrassil.rankings[7]
+                .totalKills
+                ? true
+                : false,
+              Fyrakk: data.data.characterData.character.amidrassil.rankings[8]
+                .totalKills
+                ? true
+                : false,
+            },
+            aberrus: {
+              Kazzara: data.data.characterData.character.aberrus.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              Amalgamation: data.data.characterData.character.aberrus
+                .rankings[1].totalKills
+                ? true
+                : false,
+              Experiments: data.data.characterData.character.aberrus.rankings[2]
+                .totalKills
+                ? true
+                : false,
+              Assault: data.data.characterData.character.aberrus.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Rashok: data.data.characterData.character.aberrus.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              Zskarn: data.data.characterData.character.aberrus.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Magmorax: data.data.characterData.character.aberrus.rankings[6]
+                .totalKills
+                ? true
+                : false,
+              Neltharion: data.data.characterData.character.aberrus.rankings[7]
+                .totalKills
+                ? true
+                : false,
+              Sarkareth: data.data.characterData.character.aberrus.rankings[8]
+                .totalKills
+                ? true
+                : false,
+            },
+            voti: {
+              Eranog: data.data.characterData.character.voti.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              Terros: data.data.characterData.character.voti.rankings[1]
+                .totalKills
+                ? true
+                : false,
+              Council: data.data.characterData.character.voti.rankings[2]
+                .totalKills
+                ? true
+                : false,
+              Sennarth: data.data.characterData.character.voti.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Dathea: data.data.characterData.character.voti.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              Kurog: data.data.characterData.character.voti.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Diurna: data.data.characterData.character.voti.rankings[6]
+                .totalKills
+                ? true
+                : false,
+              Raszageth: data.data.characterData.character.voti.rankings[7]
+                .totalKills
+                ? true
+                : false,
+            },
+            sotfo: {
+              Vigilan: data.data.characterData.character.sotfo.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              Dausegne: data.data.characterData.character.sotfo.rankings[1]
+                .totalKills
+                ? true
+                : false,
+              Xymox: data.data.characterData.character.sotfo.rankings[2]
+                .totalKills
+                ? true
+                : false,
+              Pantheon: data.data.characterData.character.sotfo.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Skolex: data.data.characterData.character.sotfo.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              Halondrus: data.data.characterData.character.sotfo.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Lihuvim: data.data.characterData.character.sotfo.rankings[6]
+                .totalKills
+                ? true
+                : false,
+              Anduin: data.data.characterData.character.sotfo.rankings[7]
+                .totalKills
+                ? true
+                : false,
+              Lords: data.data.characterData.character.sotfo.rankings[8]
+                .totalKills
+                ? true
+                : false,
+              Rygelon: data.data.characterData.character.sotfo.rankings[9]
+                .totalKills
+                ? true
+                : false,
+              Jailer: data.data.characterData.character.sotfo.rankings[10]
+                .totalKills
+                ? true
+                : false,
+            },
+            sod: {
+              Tarragrue: data.data.characterData.character.sod.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              EyeOfJailer: data.data.characterData.character.sod.rankings[1]
+                .totalKills
+                ? true
+                : false,
+              TheNine: data.data.characterData.character.sod.rankings[2]
+                .totalKills
+                ? true
+                : false,
+              Nerzhul: data.data.characterData.character.sod.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Dormazain: data.data.characterData.character.sod.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              Painsmith: data.data.characterData.character.sod.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Guardian: data.data.characterData.character.sod.rankings[6]
+                .totalKills
+                ? true
+                : false,
+              Fatescribe: data.data.characterData.character.sod.rankings[7]
+                .totalKills
+                ? true
+                : false,
+              Kelthuzad: data.data.characterData.character.sod.rankings[8]
+                .totalKills
+                ? true
+                : false,
+              Sylvanas: data.data.characterData.character.sod.rankings[9]
+                .totalKills
+                ? true
+                : false,
+            },
+            nathria: {
+              Shriewking: data.data.characterData.character.nathria.rankings[0]
+                .totalKills
+                ? true
+                : false,
+              Huntsman: data.data.characterData.character.nathria.rankings[1]
+                .totalKills
+                ? true
+                : false,
+              HungeringDestroyer: data.data.characterData.character.nathria
+                .rankings[2].totalKills
+                ? true
+                : false,
+              SunKing: data.data.characterData.character.nathria.rankings[3]
+                .totalKills
+                ? true
+                : false,
+              Xymox: data.data.characterData.character.nathria.rankings[4]
+                .totalKills
+                ? true
+                : false,
+              LadyInerva: data.data.characterData.character.nathria.rankings[5]
+                .totalKills
+                ? true
+                : false,
+              Council: data.data.characterData.character.nathria.rankings[6]
+                .totalKills
+                ? true
+                : false,
+              Sludgefist: data.data.characterData.character.nathria.rankings[7]
+                .totalKills
+                ? true
+                : false,
+              Generals: data.data.characterData.character.nathria.rankings[8]
+                .totalKills
+                ? true
+                : false,
+              Denathrius: data.data.characterData.character.nathria.rankings[9]
+                .totalKills
+                ? true
+                : false,
+            },
+          };
+        }
       } catch (error) {
         console.error("Error fetching character data:", error);
         throw error;
@@ -691,17 +698,16 @@ async function main() {
 
   await ConnectDB();
   await getWowProgessRecruits();
-  // await getRIORecruits();
+  await getRIORecruits();
   await checkIfDuplicate(recruitsArray);
-  // await raiderioAPI(recruitsArray);
-  // await getPlayersDescription(recruitsArray);
-  // await getWoWProgressBattleNet(recruitsArray);
-  // await getWoWProgressDiscord(recruitsArray);
-  // await warcraftlogsAPI(recruitsArray);
+  await raiderioAPI(recruitsArray);
+  await getPlayersDescription(recruitsArray);
+  await getWoWProgressBattleNet(recruitsArray);
+  await getWoWProgressDiscord(recruitsArray);
+  await warcraftlogsAPI(recruitsArray);
   // await blizzardAPI();
   await saveUserData(recruitsArray);
   console.log(recruitsArray, recruitsArray.length);
-
   // await testFetch();
   let finishTime = Date.now();
 
