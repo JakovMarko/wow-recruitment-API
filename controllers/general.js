@@ -737,6 +737,7 @@ export const getRecruits = async (req, res) => {
         recruitsArray.length,
         " recruits"
       );
+    process.exit(1);
   } catch (error) {
     console.error(error);
     res.status(404).json({ message: error.message });
