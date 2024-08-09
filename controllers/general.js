@@ -731,8 +731,8 @@ export const getRecruits = async (req, res) => {
 
     await main();
 
-    res.status(200);
-    process.exit(1);
+    res.status(200).json({ status: "ok", inserts: recruitsArray });
+    // process.exit(1);
   } catch (error) {
     console.error(error);
     res.status(404).json({ message: error.message });
