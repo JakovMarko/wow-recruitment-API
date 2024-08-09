@@ -104,7 +104,7 @@ export const getRecruits = async (req, res) => {
         try {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
-          await page.goto(url, { timeout: 60000 });
+          await page.goto(url, { timeout: 0 });
           console.log("connected to raiderIO recruitment page");
           //  Get all links
           const links = await page.evaluate(() =>
