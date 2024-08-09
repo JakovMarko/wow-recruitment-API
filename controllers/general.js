@@ -29,12 +29,12 @@ export const getRecruits = async (req, res) => {
 
     async function main() {
       let startTime = Date.now();
-      console.log(
-        "Started proccess of collecting recruiters info please stand by...."
-      );
+      // console.log(
+      //   "Started proccess of collecting recruiters info please stand by...."
+      // );
       // Get list of recruits from WoWProgress page
       async function getWowProgessRecruits() {
-        console.log("Collecting wowprogress recruits list....");
+        // console.log("Collecting wowprogress recruits list....");
         const url =
           "https://www.wowprogress.com/gearscore/eu?lfg=1&raids_week=&lang=en&sortby=ts";
         try {
@@ -89,7 +89,7 @@ export const getRecruits = async (req, res) => {
               charID,
             });
           });
-          console.log("Finished collecting wowprogress recruits list....");
+          // console.log("Finished collecting wowprogress recruits list....");
         } catch (error) {
           console.error(error);
         }
@@ -97,7 +97,7 @@ export const getRecruits = async (req, res) => {
 
       // Get a list of recruits from the RaiderIO webpage
       async function getRIORecruits() {
-        console.log("Started collecting raiderio recruits list....");
+        // console.log("Started collecting raiderio recruits list....");
 
         const url =
           "https://raider.io/search?type=character&recruitment.guild_raids.main_character.mainspec_ids[0][eq]=&recruitment.guild_raids.main_character.offspec_ids[0][eq]=&recruitment.guild_raids.profile.published_at[0][gte]=&recruitment.guild_raids.languages[0][eq]=1&region[0][eq]=eu&sort[recruitment.guild_raids.profile.published_at]=desc&page=1&pageSize=20";
@@ -105,7 +105,7 @@ export const getRecruits = async (req, res) => {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
           await page.goto(url, { timeout: 0 });
-          console.log("connected to raiderIO recruitment page");
+          // console.log("connected to raiderIO recruitment page");
           //  Get all links
           const links = await page.evaluate(() =>
             Array.from(document.querySelectorAll(".slds-col span a"), (e) => ({
@@ -115,7 +115,7 @@ export const getRecruits = async (req, res) => {
           );
 
           await browser.close();
-          console.log("closed pupeteer browser");
+          // console.log("closed pupeteer browser");
 
           // Extract the server name from each characters raiderio homepage link as i could not get it any other way
           const getServer = links.map((item, index) => {
@@ -141,7 +141,7 @@ export const getRecruits = async (req, res) => {
             }
           });
 
-          console.log("Finished collecting raiderio recruits list....");
+          // console.log("Finished collecting raiderio recruits list....");
         } catch (error) {
           console.error(error);
         }
@@ -227,11 +227,11 @@ export const getRecruits = async (req, res) => {
         if (recruitsArray.length > 0) {
           const testRun = await Recruits.insertMany(recruitsArray);
         }
-        console.log(
-          "finished inserting ",
-          recruitsArray.length,
-          " new recruits"
-        );
+        // console.log(
+        //   "finished inserting ",
+        //   recruitsArray.length,
+        //   " new recruits"
+        // );
       }
 
       // CHARACTER INFO FROM RAIDERIO API
@@ -727,19 +727,11 @@ export const getRecruits = async (req, res) => {
       //   console.log(recruitsArray, recruitsArray.length);
       // await testFetch();
       let finishTime = Date.now();
-
-      console.log((finishTime - startTime) / 1000, " seconds");
     }
 
     await main();
 
-    res
-      .status(200)
-      .json(
-        "Successfuly finished collecting ",
-        recruitsArray.length,
-        " recruits"
-      );
+    res.status(200);
     process.exit(1);
   } catch (error) {
     console.error(error);
