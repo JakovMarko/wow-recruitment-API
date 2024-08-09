@@ -714,7 +714,7 @@ export const getRecruits = async (req, res) => {
       }
 
       await ConnectDB();
-      await getWowProgessRecruits();
+      // await getWowProgessRecruits();
       await getRIORecruits();
       await checkIfDuplicate(recruitsArray);
       await raiderioAPI(recruitsArray);
