@@ -29,12 +29,9 @@ export const getRecruits = async (req, res) => {
 
     async function main() {
       let startTime = Date.now();
-      console.log(
-        "Started proccess of collecting recruiters info please stand by...."
-      );
+
       // Get list of recruits from WoWProgress page
       async function getWowProgessRecruits() {
-        console.log("Collecting wowprogress recruits list....");
         const url =
           "https://www.wowprogress.com/gearscore/eu?lfg=1&raids_week=&lang=en&sortby=ts";
         try {
@@ -89,23 +86,19 @@ export const getRecruits = async (req, res) => {
               charID,
             });
           });
-          console.log("Finished collecting wowprogress recruits list....");
         } catch (error) {
-          console.error(error);
+          res.status(404);
         }
       }
 
       // Get a list of recruits from the RaiderIO webpage
       async function getRIORecruits() {
-        console.log("Started collecting raiderio recruits list....");
-
         const url =
           "https://raider.io/search?type=character&recruitment.guild_raids.main_character.mainspec_ids[0][eq]=&recruitment.guild_raids.main_character.offspec_ids[0][eq]=&recruitment.guild_raids.profile.published_at[0][gte]=&recruitment.guild_raids.languages[0][eq]=1&region[0][eq]=eu&sort[recruitment.guild_raids.profile.published_at]=desc&page=1&pageSize=20";
         try {
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
           await page.goto(url, { timeout: 60000 });
-          console.log("connected to raiderIO recruitment page");
           //  Get all links
           const links = await page.evaluate(() =>
             Array.from(document.querySelectorAll(".slds-col span a"), (e) => ({
@@ -115,7 +108,6 @@ export const getRecruits = async (req, res) => {
           );
 
           await browser.close();
-          console.log("closed pupeteer browser");
 
           // Extract the server name from each characters raiderio homepage link as i could not get it any other way
           const getServer = links.map((item, index) => {
@@ -140,10 +132,8 @@ export const getRecruits = async (req, res) => {
               });
             }
           });
-
-          console.log("Finished collecting raiderio recruits list....");
         } catch (error) {
-          console.error(error);
+          res.status(404);
         }
       }
       // CHECK IN THE DATABASE IF RECRUIT IS NOT ALREADY ADDED
@@ -168,7 +158,6 @@ export const getRecruits = async (req, res) => {
         for await (let element of arr) {
           const response = await fetch(element.wowProgUrl);
           if (!response.ok) {
-            console.log("Network response was not ok, character not found");
             return;
             // throw new Error("Network response was not ok");
           }
@@ -184,10 +173,6 @@ export const getRecruits = async (req, res) => {
         for await (const element of arr) {
           const response = await fetch(element.wowProgUrl);
           if (!response.ok) {
-            console.log(
-              "Network response was not ok, character not found",
-              element.charName
-            );
             return;
             // throw new Error("Network response was not ok");
           }
@@ -241,11 +226,6 @@ export const getRecruits = async (req, res) => {
         if (recruitsArray.length > 0) {
           const testRun = await Recruits.insertMany(recruitsArray);
         }
-        console.log(
-          "finished inserting ",
-          recruitsArray.length,
-          " new recruits"
-        );
       }
 
       // CHARACTER INFO FROM RAIDERIO API
@@ -344,27 +324,6 @@ export const getRecruits = async (req, res) => {
           }
         }
       }
-      // USING BLIZZARD API
-      async function blizzardAPI() {
-        let element = {
-          charName: "Solidpally",
-          charServer: "twisting-nether",
-        };
-        const BnetApi = new BlizzAPI({
-          region: "eu",
-          clientId: process.env.BLIZZARD_CLIENT_ID,
-          clientSecret: process.env.BLIZZARD_CLIENT_SECRET,
-        });
-
-        // character profile-endpoint as query param
-        const character_query = await BnetApi.query(
-          `/profile/wow/character/${
-            element.charServer
-          }/${element.charName.toLowerCase()}/mythic-keystone-profile/season/9?namespace=profile-eu`
-        );
-
-        console.log(character_query);
-      }
 
       //GETTING INFORMATION FROM WARCRAFTLOGS API
       async function warcraftlogsAPI(elements) {
@@ -412,10 +371,7 @@ export const getRecruits = async (req, res) => {
           }
         }`;
             }
-            // console.log("fetching warcraftlogs data form ID:", countID);
             await fetchCharacterData(query, element);
-            // console.log("finished fetching data for ID:", countID);
-            countID++;
           }
 
           async function fetchCharacterData(query, element) {
@@ -722,8 +678,7 @@ export const getRecruits = async (req, res) => {
                 };
               }
             } catch (error) {
-              console.error("Error fetching character data:", error);
-              throw error;
+              res.status(404);
             }
           }
         }
@@ -739,23 +694,14 @@ export const getRecruits = async (req, res) => {
       await getWoWProgressDiscord(recruitsArray);
       await warcraftlogsAPI(recruitsArray);
       await saveUserData(recruitsArray);
-      // await testFetch();
-      // await blizzardAPI();
-      let finishTime = Date.now();
 
-      console.log((finishTime - startTime) / 1000, " seconds");
+      res.status(200);
     }
 
     await main();
 
-    console.log(
-      "Successfuly finished collecting ",
-      recruitsArray.length,
-      " recruits"
-    );
     res.status(200);
   } catch (error) {
-    console.error(error);
-    res.status(404).json({ message: error.message });
+    res.status(404);
   }
 };
