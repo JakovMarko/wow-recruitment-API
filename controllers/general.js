@@ -695,12 +695,10 @@ export const getRecruits = async (req, res) => {
       await warcraftlogsAPI(recruitsArray);
       await saveUserData(recruitsArray);
 
-      res.status(200);
+      res.status(200).json({ message: "OK" });
     }
 
     await main();
-
-    res.status(200);
   } catch (error) {
     res.status(404);
   }
